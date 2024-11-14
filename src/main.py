@@ -127,7 +127,7 @@ def pep(session):
                                      f'Статус в карточке: {status_pep}\n'
                                      'Ожидаемые статусы:'
                                      f'{EXPECTED_STATUS[status_table]}'
-                                    )
+                                     )
     for status, count in results_dict.items():
         results.append((status, count))
     results.append(('Total', sum(results_dict.values())))
