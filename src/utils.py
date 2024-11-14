@@ -1,11 +1,9 @@
-# utils.py
 import logging
 
-# Импорт базового класса ошибок библиотеки request.
 from requests import RequestException
 from exceptions import ParserFindTagException
 
-# Перехват ошибки RequestException.
+
 def get_response(session, url):
     try:
         response = session.get(url) 
@@ -16,6 +14,7 @@ def get_response(session, url):
             f'Возникла ошибка при загрузке страницы {url}',
             stack_info=True
         )
+
 
 def find_tag(soup, tag, attrs=None):
     searched_tag = soup.find(tag, attrs=(attrs or {}))
