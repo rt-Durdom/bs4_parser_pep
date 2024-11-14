@@ -125,11 +125,11 @@ def pep(session):
                     results_dict[status_pep] += 1
                     if status_pep not in EXPECTED_STATUS[status_table]:
                         log.append('Несовпадающие статусы:\n'
-                                     f'{detail_pep_url}\n'
-                                     f'Статус в карточке: {status_pep}\n'
-                                     'Ожидаемые статусы:'
-                                     f'{EXPECTED_STATUS[status_table]}'
-                                     )
+                                   f'{detail_pep_url}\n'
+                                   f'Статус в карточке: {status_pep}\n'
+                                   'Ожидаемые статусы:'
+                                   f'{EXPECTED_STATUS[status_table]}'
+                                   )
     results.extend(results_dict.items())
     results.append(('Total', sum(results_dict.values())))
     file_output(results, 'pep')
