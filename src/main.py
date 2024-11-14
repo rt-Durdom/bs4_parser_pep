@@ -95,7 +95,7 @@ def pep(session):
     if response is None:
         return
     soup = BeautifulSoup(response.text, 'lxml')
-    results = [('Status', 'Count')]
+    results = [('Статус', 'Количество')]
     results_dict = {}
     section_tag = find_tag(soup, 'section', attrs={'id': 'index-by-category'})
     table_tags = section_tag.find_all('tbody')
