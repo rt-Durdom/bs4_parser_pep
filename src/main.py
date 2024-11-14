@@ -4,6 +4,7 @@ import logging
 from tqdm import tqdm
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
+from collections import defaultdict
 
 from constants import BASE_DIR, MAIN_DOC_URL, MAIN_URL_PEP, EXPECTED_STATUS
 from outputs import control_output, file_output
@@ -24,7 +25,7 @@ def whats_new(session):
     sections = div_with_url.find_all('li', attrs={'class': 'toctree-l1'})
     results = [('Ссылка на статью', 'Заголовок', 'Редактор, автор')]
     for section in tqdm(sections):
-        version_a_tag = section.find('a')
+        version_a_tag = find_tag(section, 'a')
         href = version_a_tag['href']
         version_link = urljoin(whats_new_url, href)
         responce = get_response(session, version_link)
@@ -83,20 +84,22 @@ def download(session):
     archive_link = urljoin(downloads_url, pdf_a4_tag['href'])
     filename = archive_link.split('/')[-1]
     archive_path = download_dir / filename
-
-    file_d = session.get(archive_link)
+    file_d = get_response(session, archive_link)
+    if file_d is None:
+        return
     with open(archive_path, 'wb') as file:
         file.write(file_d.content)
     logging.info(f'Архив был скачан и сохранён: {archive_path}')
 
 
 def pep(session):
+    log = []
     response = get_response(session, MAIN_URL_PEP)
     if response is None:
         return
     soup = BeautifulSoup(response.text, 'lxml')
     results = [('Статус', 'Количество')]
-    results_dict = {}
+    results_dict = defaultdict(int)
     section_tag = find_tag(soup, 'section', attrs={'id': 'index-by-category'})
     table_tags = section_tag.find_all('tbody')
     for table_tag in tqdm(table_tags):
@@ -109,7 +112,9 @@ def pep(session):
             )
             href = link_tag['href']
             detail_pep_url = urljoin(MAIN_URL_PEP, href)
-            pep_response = session.get(detail_pep_url)
+            pep_response = get_response(session, detail_pep_url)
+            if pep_response is None:
+                return
             pep_response.encoding = 'utf-8'
             pep_soup = BeautifulSoup(pep_response.text, features='lxml')
             dl_tag = find_tag(pep_soup, 'dl')
@@ -117,21 +122,18 @@ def pep(session):
             for dt_tag in dt_tags:
                 if 'Status' in dt_tag.text:
                     status_pep = dt_tag.find_next_sibling('dd').text
-                    if status_pep in results_dict:
-                        results_dict[status_pep] += 1
-                    else:
-                        results_dict[status_pep] = 1
+                    results_dict[status_pep] += 1
                     if status_pep not in EXPECTED_STATUS[status_table]:
-                        logging.info('Несовпадающие статусы:\n'
+                        log.append('Несовпадающие статусы:\n'
                                      f'{detail_pep_url}\n'
                                      f'Статус в карточке: {status_pep}\n'
                                      'Ожидаемые статусы:'
                                      f'{EXPECTED_STATUS[status_table]}'
                                      )
-    for status, count in results_dict.items():
-        results.append((status, count))
+    results.extend(results_dict.items())
     results.append(('Total', sum(results_dict.values())))
     file_output(results, 'pep')
+    logging.info('\n'.join(log))
 
 
 MODE_TO_FUNCTION = {
