@@ -100,36 +100,35 @@ def pep(session):
     soup = BeautifulSoup(response.text, 'lxml')
     results = [('Статус', 'Количество')]
     results_dict = defaultdict(int)
-    section_tag = find_tag(soup, 'section', attrs={'id': 'index-by-category'})
-    table_tags = section_tag.find_all('tbody')
-    for table_tag in tqdm(table_tags):
-        tr_tags = table_tag.find_all('tr')
-        for row_tag in tr_tags:
-            status_tag = find_tag(row_tag, 'td')
-            status_table = status_tag.text[1:]
-            link_tag = find_tag(
-                row_tag, 'a', attrs={'href': re.compile(r'pep.+')}
-            )
-            href = link_tag['href']
-            detail_pep_url = urljoin(MAIN_URL_PEP, href)
-            pep_response = get_response(session, detail_pep_url)
-            if pep_response is None:
-                return
-            pep_response.encoding = 'utf-8'
-            pep_soup = BeautifulSoup(pep_response.text, features='lxml')
-            dl_tag = find_tag(pep_soup, 'dl')
-            dt_tags = dl_tag.find_all('dt')
-            for dt_tag in dt_tags:
-                if 'Status' in dt_tag.text:
-                    status_pep = dt_tag.find_next_sibling('dd').text
-                    results_dict[status_pep] += 1
-                    if status_pep not in EXPECTED_STATUS[status_table]:
-                        log.append('Несовпадающие статусы:\n'
-                                   f'{detail_pep_url}\n'
-                                   f'Статус в карточке: {status_pep}\n'
-                                   'Ожидаемые статусы:'
-                                   f'{EXPECTED_STATUS[status_table]}'
-                                   )
+    section_tag = find_tag(soup, 'section', attrs={'id': 'numerical-index'})
+    tbody = find_tag(section_tag, 'tbody')
+    rows = tbody.find_all('tr')
+    for row_tag in rows:
+        status_tag = find_tag(row_tag, 'td')
+        status_table = status_tag.text[1:]
+        link_tag = find_tag(
+            row_tag, 'a', attrs={'href': re.compile(r'pep.+')}
+        )
+        href = link_tag['href']
+        detail_pep_url = urljoin(MAIN_URL_PEP, href)
+        pep_response = get_response(session, detail_pep_url)
+        if pep_response is None:
+            return
+        pep_response.encoding = 'utf-8'
+        pep_soup = BeautifulSoup(pep_response.text, features='lxml')
+        dl_tag = find_tag(pep_soup, 'dl')
+        dt_tags = dl_tag.find_all('dt')
+        for dt_tag in dt_tags:
+            if 'Status' in dt_tag.text:
+                status_pep = dt_tag.find_next_sibling('dd').text
+                results_dict[status_pep] += 1
+                if status_pep not in EXPECTED_STATUS[status_table]:
+                    log.append('Несовпадающие статусы:\n'
+                               f'{detail_pep_url}\n'
+                               f'Статус в карточке: {status_pep}\n'
+                               'Ожидаемые статусы:'
+                               f'{EXPECTED_STATUS[status_table]}'
+                               )
     results.extend(results_dict.items())
     results.append(('Total', sum(results_dict.values())))
     file_output(results, 'pep')
